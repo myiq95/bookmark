@@ -135,16 +135,19 @@ function renderReader(){
   applyReaderSettings();lastScroll=b.scrollTop||0;setTimeout(()=>restoreProgress(),40);
 }
 function renderParagraphs(source){
-  return source.split(/\n\s*\n/).map(s=>{s=s.trim();if(!s)return'';
-    // Text files often wrap a single dialogue across physical lines. Normalize whitespace
-    // for classification, but preserve the original text for display. Never style a long block.
-    const check=s.replace(/\s+/g,' ').trim();
-    const startsQuote=/^[“"‘「『]/.test(check);
-    const endsQuote=/[.!?。！？…]*[”"’」』]$/.test(check);
-    const quotedDialogue=check.length<=500 && startsQuote;
-    const dashedDialogue=check.length<=240 && /^(?:[-—–―])\s*\S/.test(check);
+  return source.split(/\n\s*\n/).map(block=>{
+    const s=block.trim(); if(!s) return '';
+    // Normalize line wraps for classification. Dialogue must begin with a quote or dialogue dash.
+    const check=s.replace(/[\u00a0\u200b]/g,' ').replace(/\s+/g,' ').trim();
+    const beginsQuoted=/^["“‘「『]/.test(check);
+    const endsQuoted=/["”’」』][.!?。！？…]*$/.test(check);
+    const quotedDialogue=beginsQuoted && check.length<=700 && (endsQuoted || check.length<=300);
+    const dashedDialogue= /^(?:[-—–―])\s*\S/.test(check) && check.length<=300;
     const dialogue=quotedDialogue||dashedDialogue;
-    return `<p class="reader-p ${dialogue?'dialogue':''}">${esc(s).replace(/\n/g,'<br>')}</p>`;
+    const body=esc(s).replace(/\n/g,'<br>');
+    // Inline styling ensures the restored dialogue treatment survives stylesheet conflicts.
+    const style=dialogue?' style="display:block;background:#f0ece4;border-left:4px solid #526b58;padding:10px 14px;border-radius:0 8px 8px 0;margin:.7em 0;color:var(--ink);"':'';
+    return `<p class="reader-p${dialogue?' dialogue':''}"${style}>${body}</p>`;
   }).join('');
 }
 function applyReaderSettings(){let b=activeBook;if(!b)return;$('#readerBody').style.fontSize=(b.fontSize||19)+'px';$('#readerBody').style.letterSpacing=(b.letterSpacing||0)+'px';$('#spacingRange').value=b.letterSpacing||0;$('#fontSelect').value=b.fontFamily||'serif';$('#readerBody').style.fontFamily=b.fontFamily==='sans'?' -apple-system,"Apple SD Gothic Neo",sans-serif':b.fontFamily==='system'?'system-ui,sans-serif':'Georgia,"Apple SD Gothic Neo",serif';document.body.classList.toggle('night',!!b.night);$('#nightSetting').checked=!!b.night}
