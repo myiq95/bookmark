@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f7f4ee"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAE1klEQVR4nO3dP2tUQRSG8Y34pawkjY3YCAFLk8JKSOWnsApYWSSWQsBGbGyCVb5NqkBau2Fy731J7vw9Z+b51TFcZp49d3dn4x493N8dgC0vel8A7CIOSMQBiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJBe9r6ADSfnp70voY/ri6vel/DIkZEP+0wbhGIhlM5x0MSTOlbSJw6aSNC+ktZxkEWmlok0fbVCGflarmGjyUEWxTUYIS0mB2XU0GBV604Osmig3gipODkoo41661wrDspoqdJqV4mDMtqrsebl46CMXoqvfOE4KKOvsutfMg7KsKDgLhSLgzLsKLUXfNgHUpk4GBvWFNmRAnFQhk35+8JtBVJuHIwNyzJ3JysOyrAvZ4+4rUBKj4Ox4UXyTjE5IBEHpMQ4uKf4krZfTA5IxAEpJQ7uKR4l7BqTAxJxQCIOSLvj4AmHX3v3zsrk+PXtsvclGPL7+8/el3A4mPpvn+I+3n8+63glXRgJImYojlgIZexKDAYRMxpHMOQ4Md5EYD2OmOtQvAQR8xRHzEUoHoOIeY0jZuoJivcgYiPEEfQaJyMFERsqjljtUEYNIjZsHLGCoczQRDBFHLGEJyhTBRGbLo5gc5x8+Xh2OBy+/ricNoiYlbMVGEQckIgDEnFAIg5IxAGJOCARByTigEQckIgDEnFAIg5IDuK4ub3pfQnl/f33p/clPM3Hkf2ij+NXx72uJJmLGhYcxLFI4eb2xkUr6xrevH7b5UqSOYhjwWwrA9Sw4C+OhY6tjFfDgvs4Fqq2MnwNC6PFsbBuJfMXjl3DgoOXsgVl3mKmKuMwWxzYhTggEQck4oBEHJCIAxJxQHIQB0f2vfh4h3Tdh82TWMVFCmsO4lh3sD4x2fyxXjZT8PjuqoM41jY72Lz71C5mmA42uYxjU4MBM3YKa+PEsbaZS+bvHDiFNQevVgriVHaXueLALsQBiTggEQck4oBEHJCIA5KDODiV7cXHO6SWj9mew0UKaw7i4FS2FwdxrHEq24bLODZxKlvcOHGscSqbycGrlYI4ld1lrjiwC3FAIg5IxAGJOCARByTigGTlTbDwtb/xdwHP5t2nD70v4RErcQTxt4hPEoq1JgJzccQGHidmg4iZjiMYZpy4aCLwEUfM3TjxFUTMXxyB8XHit4nAcRwxI+NkgCBig8QRdKlksCaC0eIIat90Rg0iNmwcsYLjZIYmginiCNLGyVRBxOaKI/bkOJm2ieDo4f5u1z84OT+tdClo4Pri6vk/zKkspN1x7EoPpuzdOyYHJOKARByQUuLgaYdHCbvG5IBEHJAS4+DO4kvafjE5IBEHpPQ4uLN4kbxTTA5IWXEwPOzL2aPcyUEflmXuDrcVSAXiYHjYlL8vZSYHfVhTZEe4rUAqFgfDw45Se1FyctCHBQV3ofBthT76Krv+5Z9z0EcvxVe+yhNS+mivxprXerVCHy1VWu2KL2Xpo41667z7zyET8BeUldR++LV4E4wRUkODVW0xOQJGSBHNHmxN3z5nhORruYZNJ0fACEnQ/qHVJ46ASp7Ucdx2jiOgkgULt2ArccSmDcVCEDGLccAIPuwDiTggEQck4oBEHJCIAxJxQCIOSMQBiTggEQck4oBEHJCIA9J/EiKsxsd4RwUAAAAASUVORK5CYII=">
 <link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <title>책갈피 — 나만의 서재</title>
 <style>
@@ -137,9 +136,11 @@ function renderReader(){
 }
 function renderParagraphs(source){
   return source.split(/\n\s*\n/).map(s=>{s=s.trim();if(!s)return'';
-    // Only style a clearly marked, single-line dialogue paragraph. Long or multiline
-    // blocks are prose even if the first character happens to be a quotation mark.
-    const dialogue=s.length<=240 && !s.includes('\n') && /^(?:[“"‘「『]|[-—–]\s*)/.test(s);
+    // Style a standalone quoted line, or a short dialogue line marked with a dash.
+    // Requiring a closing quote prevents a chapter-sized block from being styled by accident.
+    const quotedDialogue = s.length <= 500 && /^(?:[“"‘「『])(?=.{1,498}(?:[”"’」』]))[\s\S]*[”"’」』][.!?。！？…]*$/.test(s);
+    const dashedDialogue = s.length <= 240 && /^(?:[-—–―])\s+\S/.test(s);
+    const dialogue = quotedDialogue || dashedDialogue;
     return `<p class="reader-p ${dialogue?'dialogue':''}">${esc(s).replace(/\n/g,'<br>')}</p>`;
   }).join('');
 }
